@@ -3,16 +3,32 @@ package main
 import (
 	"fmt"
 	"os"
-	"github.com/MindTooth/domeneshop-sdk-go/domeneshop"
-
 )
 
 func main() {
 
-	token := os.Getenv("DOMENESHOP_API_TOKEN")
-	secret := os.Getenv("DOMENESHOP_API_SECRET")
+	tokenp, err := os.LookupEnv("DOMENESHOP_API_TOKEN")
 
-	auth := new APIAuth(token, secret)
+	if !err {
+		fmt.Println("Testing")
+		panic(err)
+	}
 
-	fmt.Printl("Hello, %s!  How are you, %s", token, secret)
+	secretp, err := os.LookupEnv("DOMENESHOP_API_SECRET")
+
+	if !err {
+		fmt.Println("Heo")
+		panic(err)
+	}
+
+	// var auth *APIAuth
+	// auth.token = token
+	// auth.secret = secret
+
+	// auth := domeneshop.APIAuth{
+	// 	Token:  tokenp,
+	// 	Secret: secretp,
+	// }
+
+	fmt.Printf("Hello, %s!  How are you, %s", tokenp, secretp)
 }
