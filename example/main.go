@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/MindTooth/domeneshop-sdk-go/domeneshop"
 )
 
 func main() {
-
 	tokenp, err := os.LookupEnv("DOMENESHOP_API_TOKEN")
 
 	if !err {
@@ -21,14 +22,11 @@ func main() {
 		panic(err)
 	}
 
-	// var auth *APIAuth
-	// auth.token = token
-	// auth.secret = secret
+	client := domeneshop.BasicAuth(tokenp, secretp)
 
-	// auth := domeneshop.APIAuth{
-	// 	Token:  tokenp,
-	// 	Secret: secretp,
-	// }
+	domains, _ := client.GetDomains()
+
+	fmt.Println(domains)
 
 	fmt.Printf("Hello, %s!  How are you, %s", tokenp, secretp)
 }
