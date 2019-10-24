@@ -9,16 +9,14 @@ import (
 
 func main() {
 	tokenp, err := os.LookupEnv("DOMENESHOP_API_TOKEN")
-
 	if !err {
-		fmt.Println("Testing")
+		fmt.Println("Token is not set...")
 		panic(err)
 	}
 
 	secretp, err := os.LookupEnv("DOMENESHOP_API_SECRET")
-
 	if !err {
-		fmt.Println("Heo")
+		fmt.Println("Secret is not set...")
 		panic(err)
 	}
 
