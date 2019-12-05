@@ -1,4 +1,4 @@
-# domeneshop.go
+# go-domeneshop
 
 Attempt at creating a Go library for [Domeneshop](https://domene.shop).
 
