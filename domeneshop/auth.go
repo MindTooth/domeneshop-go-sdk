@@ -13,7 +13,7 @@ type BasicAuthTransport struct {
 }
 
 // RoundTrip creates an auth client
-func (t *BasicAuthTransport) RoundTrip(req *http.Request) (*http.Respons, error) {
+func (t *BasicAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req2 := cloneRequest(req)
 
 	req2.SetBasicAuth(t.Token, t.Token)

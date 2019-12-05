@@ -48,7 +48,6 @@ type domainsResponse struct {
 // DomainListOptions specifies extra options.
 type DomainListOptions struct {
 	Domain string `url:"domain,omitempty"`
-	ListOptions
 }
 
 // ListDomains Lists all domains
