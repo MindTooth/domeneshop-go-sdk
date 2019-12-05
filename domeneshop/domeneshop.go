@@ -3,7 +3,15 @@ package domeneshop
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
+	"net/url"
+	"reflect"
+	"strings"
+
+	"github.com/google/go-querystring/query"
 )
 
 const (
@@ -52,4 +60,129 @@ func (c *Client) NewRequest(method, path string, payload interface{}) (*http.Req
 		}
 	}
 
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Cpntent-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("User-Agent", formatUserAgent(c.UserAgent))
+
+	return req, nil
+}
+
+func formatUserAgent(customUserAgent string) string {
+	if customUserAgent == "" {
+		return defaultUserAgent
+	}
+
+	return fmt.Sprintf("%s %s", defaultUserAgent, customUserAgent)
+}
+
+func versioned(path string) string {
+	return fmt.Sprintf("/%s/%s", apiVersion, strings.Trim(path, "/"))
+
+}
+
+func (c *Client) get(path string, obj interface{}) (*http.Response, error) {
+	req, err := c.NewRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Do(req, obj)
+}
+
+// Dog sends API
+func (c *Client) Do(req *http.Request, obj interface{}) (*http.Response, error) {
+	if c.Debug {
+		log.Printf("Executing request (%v): %#v", req.URL, req)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if c.Debug {
+		log.Printf("Response recieved: %#v", resp)
+	}
+
+	err = CheckResponse(resp)
+	if err != nil {
+		return resp, err
+	}
+
+	if obj != nil {
+		if w, ok := obj.(io.Writer); ok {
+			_, err = io.Copy(w, resp.Body)
+		} else {
+			err = json.NewDecoder(resp.body).Decode(obj)
+		}
+	}
+
+	return resp, err
+}
+
+// Response responds
+type Response struct {
+	HTTPResponse *http.Response
+}
+
+// ErrorResponse is an error
+type ErrorResponse struct {
+	Response
+	Message string `json:"code"`
+}
+
+func (r *ErrorResponse) Error() string {
+	return fmt.Sprintf("%v %v: %v %v",
+		r.HttpResponse.Request.Method, r.HttpResponse.Request.URL,
+		r.HttpResponse.StatusCode, r.Message)
+}
+
+// CheckResponse check an response
+func CheckResponse(resp *http.Response) error {
+
+	if code := resp.StatusCode; 200 <= code && code <= 299 {
+		return nil
+	}
+
+	errorResponse := &ErrorResponse{}
+	errorResponse.HttpResponse = resp
+
+	err := json.NewDecoder(resp.Body).Decode(errorResponse)
+	if err != nil {
+		return err
+	}
+
+	return errorResponse
+}
+
+func addURLQueryOptions(path string, options interface{}) (string, error) {
+	opt := reflect.ValueOf(options)
+
+	if opt.Kind() == reflect.Ptr && opt.IsNil() {
+		return path, nil
+	}
+
+	u, err := url.Parse(path)
+	if err != nil {
+		return path, err
+	}
+
+	qs, err := query.Values(options)
+	if err != nil {
+		return path, err
+	}
+
+	uqs := u.Query()
+	for k := range qs {
+		uqs.Set(k, qs.Get(k))
+	}
+	u.RawQuery = uqs.Encode()
+
+	return u.String(), nil
 }

@@ -47,11 +47,11 @@ type domainsResponse struct {
 
 // DomainListOptions specifies extra options.
 type DomainListOptions struct {
-	NameLike string `url:"domain,omitempty"`
+	Domain string `url:"domain,omitempty"`
 	ListOptions
 }
 
-// ListDomains list all domains
+// ListDomains Lists all domains
 func (s *DomainsService) ListDomains(options *DomainListOptions) (*domainsResponse, error) {
 	path := versioned(domainPath(""))
 	domainsResponse := &domainsResponse{}
