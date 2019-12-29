@@ -15,7 +15,7 @@ type Domain struct {
 	Nameservers    []string `json:"nameservers,omitempty"`
 	RegisteredDate string   `json:"registered_date,omitempty"`
 	Registrant     string   `json:"registrant,omitempty"`
-	Renew          bool     `json:"renaw,omitempty"`
+	Renew          bool     `json:"renew,omitempty"`
 	Services       services `json:"services,omitempty"`
 	Status         string   `json:"status,omitempty"`
 }
@@ -65,6 +65,6 @@ func (s *DomainsService) ListDomains(options *DomainListOptions) (*domainsRespon
 		return nil, err
 	}
 
-	domainsResponse.HttpResponse = resp
+	domainsResponse.HTTPResponse = resp
 	return domainsResponse, nil
 }

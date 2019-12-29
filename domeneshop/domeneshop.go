@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"reflect"
 	"strings"
@@ -54,7 +55,7 @@ func (c *Client) NewRequest(method, path string, payload interface{}) (*http.Req
 
 	body := new(bytes.Buffer)
 	if payload != nil {
-		err := json.NewDecoder(body).Encode(payload)
+		err := json.NewEncoder(body).Encode(payload)
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +66,7 @@ func (c *Client) NewRequest(method, path string, payload interface{}) (*http.Req
 		return nil, err
 	}
 
-	req.Header.Set("Cpntent-Type", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("User-Agent", formatUserAgent(c.UserAgent))
 
@@ -94,7 +95,7 @@ func (c *Client) get(path string, obj interface{}) (*http.Response, error) {
 	return c.Do(req, obj)
 }
 
-// Dog sends API
+// Do sends API
 func (c *Client) Do(req *http.Request, obj interface{}) (*http.Response, error) {
 	if c.Debug {
 		log.Printf("Executing request (%v): %#v", req.URL, req)
@@ -119,7 +120,7 @@ func (c *Client) Do(req *http.Request, obj interface{}) (*http.Response, error) 
 		if w, ok := obj.(io.Writer); ok {
 			_, err = io.Copy(w, resp.Body)
 		} else {
-			err = json.NewDecoder(resp.body).Decode(obj)
+			err = json.NewDecoder(resp.Body).Decode(obj)
 		}
 	}
 
@@ -139,8 +140,8 @@ type ErrorResponse struct {
 
 func (r *ErrorResponse) Error() string {
 	return fmt.Sprintf("%v %v: %v %v",
-		r.HttpResponse.Request.Method, r.HttpResponse.Request.URL,
-		r.HttpResponse.StatusCode, r.Message)
+		r.HTTPResponse.Request.Method, r.HTTPResponse.Request.URL,
+		r.HTTPResponse.StatusCode, r.Message)
 }
 
 // CheckResponse check an response
@@ -151,7 +152,7 @@ func CheckResponse(resp *http.Response) error {
 	}
 
 	errorResponse := &ErrorResponse{}
-	errorResponse.HttpResponse = resp
+	errorResponse.HTTPResponse = resp
 
 	err := json.NewDecoder(resp.Body).Decode(errorResponse)
 	if err != nil {
