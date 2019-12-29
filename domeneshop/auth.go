@@ -16,7 +16,7 @@ type BasicAuthTransport struct {
 func (t *BasicAuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req2 := cloneRequest(req)
 
-	req2.SetBasicAuth(t.Token, t.Token)
+	req2.SetBasicAuth(t.Token, t.Secret)
 	return t.transport().RoundTrip(req2)
 }
 
