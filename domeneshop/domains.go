@@ -68,3 +68,17 @@ func (s *DomainsService) ListDomains(options *DomainListOptions) (*domainsRespon
 	domainsResponse.HTTPResponse = resp
 	return domainsResponse, nil
 }
+
+// GetDomain retrieves info about a single domain
+func (s *DomainsService) GetDomain(domainIdentifier string) (*domainResponse, error) {
+	path := versioned(domainPath(domainIdentifier))
+	domainResponse := &domainResponse{}
+
+	resp, err := s.client.get(path, domainResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	domainResponse.HTTPResponse = resp
+	return domainResponse, nil
+}

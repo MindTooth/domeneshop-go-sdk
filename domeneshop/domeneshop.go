@@ -116,12 +116,30 @@ func (c *Client) Do(req *http.Request, obj interface{}) (*http.Response, error) 
 		return resp, err
 	}
 
+	// DEBUG:  Must remove....
+	if c.Debug {
+		dump, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%q", dump)
+	}
+
 	if obj != nil {
 		if w, ok := obj.(io.Writer); ok {
 			_, err = io.Copy(w, resp.Body)
 		} else {
 			err = json.NewDecoder(resp.Body).Decode(obj)
 		}
+	}
+
+	if c.Debug {
+		// dump, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Hello")
+		log.Printf("Body recieved: %#v", resp.Body)
 	}
 
 	return resp, err
