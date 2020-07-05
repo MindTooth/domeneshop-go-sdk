@@ -1,4 +1,4 @@
-# Go API client for openapi
+# Go API client for go-domeneshop
 
 # Overview
 
@@ -70,7 +70,7 @@ go get github.com/antihax/optional
 Put the package under your project folder and add the following in import:
 
 ```golang
-import "./openapi"
+import "./domeneshop"
 ```
 
 ## Documentation for API Endpoints
@@ -141,4 +141,3 @@ r, err := client.Service.Operation(auth, args)
 ## Author
 
 kundeservice@domeneshop.no
-
