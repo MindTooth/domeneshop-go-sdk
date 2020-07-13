@@ -1,0 +1,933 @@
+openapi: 3.0.1
+info:
+  contact:
+    email: kundeservice@domeneshop.no
+    name: API Support
+  description: |
+    # Overview
+
+    Domeneshop offers a simple, REST-based API, which currently supports the following
+    features:
+
+    - List domains
+    - List invoices
+    - Create, read, update and delete DNS records for domains
+    - Create, read, update and delete HTTP forwards ("WWW forwarding") for domains
+    - Dynamic DNS (DDNS) update endpoints for use in consumer routers
+
+    More features are planned, including:
+
+    - Web hosting administration
+    - Email address and email user/account administration
+
+    # Testing period
+
+    The API service is in version 0, which means it is possible that the interface
+    will change rapidly during the testing period. For that reason, **the documentation on these
+    pages may sometimes be outdated.**
+
+    Additionally, we make no guarantees about the stability of the API service during this testing period,
+    and therefore ask customers to be careful with using the service for business critical purposes.
+
+    # Authentication
+
+    The Domeneshop API currently supports only one method of authentication, **HTTP Basic Auth**. More authentication methods may
+    be added in the future.
+
+    To generate credentials, visit <a href="https://www.domeneshop.no/login" target="_blank">this page</a>
+    after logging in to the control panel on our website:
+
+    <a href="https://www.domeneshop.no/login" target="_blank">https://www.domeneshop.no/login</a>
+
+    # Libraries
+
+    Domeneshop maintains multiple API libraries to simplify using the API. Please note that these libraries
+    have the same stability guarantees to the API while the API is in version 0.
+
+    The libraries may be found in our [Github repository](https://github.com/domeneshop/).
+
+    Domeneshop also maintains a plugin for [EFF's Certbot](https://certbot.eff.org/), which automates issuance and
+    renewal of SSL-certificates on your own servers for domains that use Domeneshop's DNS service. This plugin is
+    found in our Github repository [here](https://github.com/domeneshop/certbot-dns-domeneshop).
+
+    <SecurityDefinitions />
+  title: Domeneshop API Documentation
+  version: v0
+  x-logo:
+    url: https://domene.shop/svg/logo-no.svg
+    altText: Domeneshop
+externalDocs:
+  description: Domeneshop website
+  url: https://www.domeneshop.no
+servers:
+- url: https://api.domeneshop.no/v0
+security:
+- basicAuth: []
+tags:
+- name: domains
+  x-displayName: Domains
+- description: |
+    These endpoints allow you to list, create and delete DNS records for any domain that has
+    active DNS service.
+  name: dns
+  x-displayName: DNS
+- description: |
+    This group exposes endpoints that can be used by certain Dynamic DNS implementations found in consumer routers appliances.
+  name: ddns
+  x-displayName: Dynamic DDNS (DDNS)
+- description: |
+    These endpoints allow you to list, create and delete HTTP forwards ("WWW forwarding") for any domain
+    that has active DNS service.
+
+    While frame forwards (an `<iframe>` embed) are supported through setting the `frame` field, we strongly
+    discourage the use of these. Use DNS records instead.
+  name: forwards
+  x-displayName: HTTP Forwards
+- name: invoices
+  x-displayName: Invoices
+- description: |
+    These are the schema definitions for the different valid DNS record types.
+
+    # A record
+    <SchemaDefinition schemaRef="#/components/schemas/A" />
+
+    # AAAA record
+    <SchemaDefinition schemaRef="#/components/schemas/AAAA" />
+
+    # CNAME record
+    <SchemaDefinition schemaRef="#/components/schemas/CNAME" />
+
+    # MX record
+    <SchemaDefinition schemaRef="#/components/schemas/MX" />
+
+    # SRV record
+    <SchemaDefinition schemaRef="#/components/schemas/SRV" />
+
+    # TXT record
+    <SchemaDefinition schemaRef="#/components/schemas/TXT" />
+  name: dns_record_models
+  x-displayName: DNS record models
+paths:
+  /domains:
+    get:
+      operationId: getDomains
+      parameters:
+      - description: Only return domains whose `domain` field includes this string
+        example: .no
+        explode: true
+        in: query
+        name: domain
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Domain'
+                type: array
+          description: Successful operation
+      summary: List domains
+      tags:
+      - domains
+  /domains/{domainId}:
+    get:
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+          description: Successful operation
+      summary: Find domain by ID
+      tags:
+      - domains
+  /domains/{domainId}/dns:
+    get:
+      operationId: getDnsRecords
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Only return records whose `host` field matches this string
+        example: www
+        explode: true
+        in: query
+        name: host
+        required: false
+        schema:
+          type: string
+        style: form
+      - description: Only return records whose `type` field matches this string
+        example: A
+        explode: true
+        in: query
+        name: type
+        required: false
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/DNSRecord'
+                type: array
+          description: Successful operation
+      summary: List DNS records
+      tags:
+      - dns
+    post:
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DNSRecord'
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_201'
+          description: Successful operation
+          headers:
+            location:
+              description: The URL to the DNS record resource that was created
+              explode: false
+              schema:
+                type: string
+              style: simple
+        "404":
+          description: Domain domainId does not exist.
+      summary: Add DNS record
+      tags:
+      - dns
+  /domains/{domainId}/dns/{recordId}:
+    delete:
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: ID of DNS record
+        explode: false
+        in: path
+        name: recordId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "204":
+          description: DNS record is deleted
+        "404":
+          description: DNS record does not exist
+      summary: Delete DNS record by ID
+      tags:
+      - dns
+    get:
+      operationId: getRecordById
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: ID of DNS record
+        explode: false
+        in: path
+        name: recordId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DNSRecord'
+          description: Success
+      summary: Find DNS record by ID
+      tags:
+      - dns
+    put:
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: ID of DNS record
+        explode: false
+        in: path
+        name: recordId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DNSRecord'
+      responses:
+        "204":
+          description: Successful operation
+        "400":
+          description: DNS record failed validation
+        "404":
+          description: DNS record does not exist
+      summary: Update DNS record by ID
+      tags:
+      - dns
+  /domains/{domainId}/forwards/:
+    get:
+      description: List all forwards for the specified domain.
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/HTTPForward'
+                type: array
+          description: Successful operation
+      summary: List forwards
+      tags:
+      - forwards
+    post:
+      description: |
+        Create a forwarding for the specified domain, to a given URL.
+
+        The forward must not collide with any existing forwarding or DNS record
+        of types `A`, `AAAA`, `ANAME` or `CNAME`.
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "201":
+          description: Successful operation
+        "400":
+          description: Invalid forward
+        "409":
+          description: The forward collides with an existing forwarding or DNS record
+      summary: Add forward
+      tags:
+      - forwards
+  /domains/{domainId}/forwards/{host}:
+    get:
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Subdomain of the forward, `@` for the root domain
+        example: www
+        explode: false
+        in: path
+        name: host
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPForward'
+          description: Successful operation
+        "404":
+          description: Forward or domain not found
+      summary: Find forward by host
+      tags:
+      - forwards
+    put:
+      description: |
+        Update a forwarding for the specified domain, to a given URL.
+
+        The `host` field must not be changed. In that case, delete the
+        existing forwarding and recreate it for the new host/subdomain.
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Subdomain of the forward, `@` for the root domain
+        example: www
+        explode: false
+        in: path
+        name: host
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HTTPForward'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPForward'
+          description: Successful operation
+        "400":
+          description: Invalid forward
+        "404":
+          description: Forward or domain not found
+        "412":
+          description: Forward host was modified
+      summary: Update forward by host
+      tags:
+      - forwards
+  /invoices:
+    get:
+      description: List invoices for your account. Only invoices from the past 3 years
+        are returned.
+      operationId: getInvoices
+      parameters:
+      - description: Only return invoices with this status
+        explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          $ref: '#/components/schemas/Invoice/properties/status'
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Invoice'
+                type: array
+          description: Successful operation
+      summary: List invoices
+      tags:
+      - invoices
+  /invoices/{invoiceId}:
+    get:
+      operationId: findInvoiceByNumber
+      parameters:
+      - description: An invoice number
+        explode: false
+        in: path
+        name: invoiceId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: Successful operation
+        "404":
+          description: Invoice not found
+      summary: Find invoice by invoice number
+      tags:
+      - invoices
+  /dyndns/update:
+    get:
+      description: |
+        Update DNS using the "IP update protocol".
+
+        A DNS record for the given hostname will be created if it does not exist, or updated if it does. The record
+        type (`A` or `AAAA` will automatically be detected).
+
+        If the DDNS implementation does not allow you to specify authentication, it can usually be specified inline
+        in the URL:
+
+          ```
+          https://{token}:{secret}@api.domeneshop.no/v0/dyndns/update?hostname=example.com&myip=127.0.0.1
+          ```
+      parameters:
+      - description: The fully qualified domain (FQDN) to be updated, without trailing
+          dot.
+        example: www.example.com
+        explode: true
+        in: query
+        name: hostname
+        required: true
+        schema:
+          format: hostname
+          type: string
+        style: form
+      - description: The new IPv4 or IPv6 address to set. If not provided, the IP
+          of the client making the API request will be used.
+        explode: true
+        in: query
+        name: myip
+        required: false
+        schema:
+          format: ipv4|ipv6
+          type: string
+        style: form
+      responses:
+        "204":
+          description: Successful operation
+        "404":
+          description: Domain not found
+      summary: Update
+      tags:
+      - ddns
+components:
+  parameters:
+    domainId:
+      description: ID of the domain
+      explode: false
+      in: path
+      name: domainId
+      required: true
+      schema:
+        type: integer
+      style: simple
+    recordId:
+      description: ID of DNS record
+      explode: false
+      in: path
+      name: recordId
+      required: true
+      schema:
+        type: integer
+      style: simple
+    invoiceId:
+      description: An invoice number
+      explode: false
+      in: path
+      name: invoiceId
+      required: true
+      schema:
+        type: integer
+      style: simple
+    forwardHost:
+      description: Subdomain of the forward, `@` for the root domain
+      example: www
+      explode: false
+      in: path
+      name: host
+      required: true
+      schema:
+        type: string
+      style: simple
+  schemas:
+    Domain:
+      example:
+        nameservers:
+        - ns1.hyp.net
+        - ns2.hyp.net
+        - ns3.hyp.net
+        domain: example.com
+        expiry_date: 2000-01-23
+        id: 1
+        renew: true
+        registrant: Ola Nordmann
+        services:
+          registrar: true
+          dns: true
+          webhotel: none
+          email: true
+        registered_date: 2000-01-23
+        status: active
+      properties:
+        id:
+          example: 1
+          format: int32
+          type: integer
+        domain:
+          example: example.com
+          type: string
+        expiry_date:
+          format: date
+          type: string
+        registered_date:
+          format: date
+          type: string
+        renew:
+          example: true
+          type: boolean
+        registrant:
+          example: Ola Nordmann
+          type: string
+        status:
+          description: Domain status
+          enum:
+          - active
+          - expired
+          - deactivated
+          - pendingDeleteRestorable
+          type: string
+        nameservers:
+          example:
+          - ns1.hyp.net
+          - ns2.hyp.net
+          - ns3.hyp.net
+          items:
+            type: string
+          maxItems: 6
+          minItems: 2
+          type: array
+        services:
+          $ref: '#/components/schemas/DomainServices'
+      type: object
+    DomainServices:
+      description: Domain services
+      example:
+        registrar: true
+        dns: true
+        webhotel: none
+        email: true
+      properties:
+        registrar:
+          type: boolean
+        dns:
+          type: boolean
+        email:
+          type: boolean
+        webhotel:
+          enum:
+          - none
+          - webmedium
+          - websmall
+          - weblarge
+          - webxlarge
+          type: string
+      type: object
+    BaseRecord:
+      properties:
+        id:
+          description: ID of DNS record
+          example: 1
+          readOnly: true
+          type: integer
+        host:
+          description: The host/subdomain the DNS record applies to
+          example: '@'
+          type: string
+        ttl:
+          default: 3600
+          description: TTL of DNS record in seconds. Must be a multiple of 60.
+          format: int16
+          maximum: 604800
+          minimum: 60
+          type: integer
+      required:
+      - host
+      - id
+      type: object
+    A:
+      allOf:
+      - $ref: '#/components/schemas/BaseRecord'
+      - $ref: '#/components/schemas/A_allOf'
+    AAAA:
+      allOf:
+      - $ref: '#/components/schemas/BaseRecord'
+      - $ref: '#/components/schemas/AAAA_allOf'
+    MX:
+      allOf:
+      - $ref: '#/components/schemas/BaseRecord'
+      - $ref: '#/components/schemas/MX_allOf'
+    SRV:
+      allOf:
+      - $ref: '#/components/schemas/BaseRecord'
+      - $ref: '#/components/schemas/SRV_allOf'
+      description: SRV records yo!
+    TXT:
+      allOf:
+      - $ref: '#/components/schemas/BaseRecord'
+      - $ref: '#/components/schemas/TXT_allOf'
+    CNAME:
+      allOf:
+      - $ref: '#/components/schemas/BaseRecord'
+      - $ref: '#/components/schemas/CNAME_allOf'
+    DNSRecord:
+      oneOf:
+      - $ref: '#/components/schemas/A'
+      - $ref: '#/components/schemas/AAAA'
+      - $ref: '#/components/schemas/CNAME'
+      - $ref: '#/components/schemas/MX'
+      - $ref: '#/components/schemas/SRV'
+      - $ref: '#/components/schemas/TXT'
+    HTTPForward:
+      example:
+        host: '@'
+        url: https://www.example.com
+        frame: false
+      properties:
+        host:
+          description: |
+            The subdomain this forward applies to, without the domain part.
+
+            For instance, `www` in the context of the `example.com` domain signifies a forward for `www.example.com`.
+          example: '@'
+          type: string
+        frame:
+          description: Whether to enable frame forwarding using an iframe embed. **NOT**
+            recommended for a variety of reasons.
+          example: false
+          type: boolean
+        url:
+          description: The URL to forward to. Must include scheme, e.g. `https://`
+            or `ftp://`.
+          example: https://www.example.com
+          type: string
+    Invoice:
+      example:
+        amount: 120
+        issued_date: 2000-01-23
+        due_date: 2000-01-23
+        currency: NOK
+        id: 1
+        type: invoice
+        paid_date: 2000-01-23
+        url: https://www.domeneshop.no/invoice?nr=1&code=
+        status: paid
+      properties:
+        id:
+          description: Invoice ID/number
+          example: 1
+          type: integer
+        type:
+          enum:
+          - invoice
+          - credit_node
+          type: string
+        amount:
+          example: 120
+          type: integer
+        currency:
+          enum:
+          - NOK
+          - SEK
+          - DKK
+          - GBP
+          - USD
+          type: string
+        due_date:
+          description: The invoice due date. Only available for type `invoice`.
+          format: date
+          type: string
+        issued_date:
+          description: The date when the invoice was issued.
+          format: date
+          type: string
+        paid_date:
+          description: The payment date. Only available if the invoice has status
+            `paid`.
+          format: date
+          type: string
+        status:
+          description: "`settled` is only applicable to credit notes. These are usually\
+            \ created if \ndomains have been\n"
+          enum:
+          - unpaid
+          - paid
+          - settled
+          example: paid
+          type: string
+        url:
+          example: https://www.domeneshop.no/invoice?nr=1&code=
+          format: url
+          type: string
+    inline_response_201:
+      example:
+        id: 1
+      properties:
+        id:
+          description: ID of the created DNS record
+          example: 1
+          type: integer
+    A_allOf:
+      properties:
+        type:
+          enum:
+          - A
+          type: string
+        data:
+          description: IPv4 address
+          format: ipv4
+          type: string
+      required:
+      - data
+      - type
+    AAAA_allOf:
+      properties:
+        type:
+          enum:
+          - AAAA
+          type: string
+        data:
+          description: IPv6 address
+          format: ipv6
+          type: string
+      required:
+      - data
+      - type
+    MX_allOf:
+      properties:
+        type:
+          enum:
+          - MX
+          type: string
+        data:
+          description: The target MX host.
+          example: mx.example.com
+          format: hostname
+          type: string
+        priority:
+          description: MX record priority, also known as preference. Lower values
+            are usually preferred first, but this is not guaranteed
+          example: 1
+          format: int16
+          type: integer
+      required:
+      - data
+      - priority
+      - type
+    SRV_allOf:
+      properties:
+        type:
+          enum:
+          - SRV
+          type: string
+        data:
+          description: The target hostname
+          example: www.example.com
+          format: hostname
+          type: string
+        priority:
+          description: SRV record priority, also known as preference. Lower values
+            are usually preferred first
+          example: 10
+          format: int16
+          type: integer
+        weight:
+          description: SRV record weight. Relevant if multiple records have same preference
+          example: 100
+          format: int16
+          type: integer
+        port:
+          description: SRV record port. The port where the service is found.
+          example: 443
+          format: int16
+          type: integer
+      required:
+      - data
+      - port
+      - priority
+      - type
+      - weight
+    TXT_allOf:
+      properties:
+        type:
+          enum:
+          - TXT
+          type: string
+        data:
+          description: Freeform text field.
+          example: v=spf1 include:_spf.domeneshop.no ~all
+          type: string
+      required:
+      - data
+      - type
+    CNAME_allOf:
+      properties:
+        type:
+          enum:
+          - CNAME
+          type: string
+        data:
+          description: The target hostname
+          example: www.example.com
+          type: string
+      required:
+      - data
+      - type
+  securitySchemes:
+    basicAuth:
+      description: |
+        With the **HTTP Basic Auth** authentication method, the `token` is the username,
+        and the `secret` is the password.
+
+        See above for instructions on how to generate credentials.
+      scheme: basic
+      type: http
+x-tagGroups:
+- name: Endpoints
+  tags:
+  - domains
+  - dns
+  - ddns
+  - forwards
+  - invoices
+- name: Models
+  tags:
+  - dns_record_models
