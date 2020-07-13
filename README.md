@@ -1,4 +1,4 @@
-# Go API client for go-domeneshop
+# Go API client for domeneshop
 
 # Overview
 
@@ -129,11 +129,36 @@ Class | Method | HTTP request | Description
 Example
 
 ```golang
-auth := context.WithValue(context.Background(), sw.ContextBasicAuth, sw.BasicAuth{
-    UserName: "username",
-    Password: "password",
-})
-r, err := client.Service.Operation(auth, args)
+package main
+
+import (
+        "fmt"
+
+        "github.com/MindTooth/go-domeneshop"
+        "golang.org/x/net/context"
+)
+
+func main() {
+        cfg := domeneshop.NewConfiguration()
+        dnClient := domeneshop.NewAPIClient(cfg)
+
+        token := ""
+        secret := ""
+
+        auth := context.WithValue(context.Background(), domeneshop.ContextBasicAuth, domeneshop.BasicAuth{
+                UserName: token,
+                Password: secret,
+        })
+
+        domains, _, err := dnClient.DomainsApi.GetDomains(auth, nil)
+        if err != nil {
+                panic(err)
+        }
+
+        for _, domain := range domains {
+                fmt.Println(domain.Domain)
+        }
+}
 ```
 
 
@@ -141,3 +166,4 @@ r, err := client.Service.Operation(auth, args)
 ## Author
 
 kundeservice@domeneshop.no
+
