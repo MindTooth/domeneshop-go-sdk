@@ -5,10 +5,9 @@ info:
     name: API Support
   description: |
     # Overview
-
     Domeneshop offers a simple, REST-based API, which currently supports the following
-    features:
 
+    features:
     - List domains
     - List invoices
     - Create, read, update and delete DNS records for domains
@@ -16,41 +15,16 @@ info:
     - Dynamic DNS (DDNS) update endpoints for use in consumer routers
 
     More features are planned, including:
-
     - Web hosting administration
     - Email address and email user/account administration
 
-    # Testing period
-
-    The API service is in version 0, which means it is possible that the interface
-    will change rapidly during the testing period. For that reason, **the documentation on these
-    pages may sometimes be outdated.**
-
-    Additionally, we make no guarantees about the stability of the API service during this testing period,
-    and therefore ask customers to be careful with using the service for business critical purposes.
-
     # Authentication
-
     The Domeneshop API currently supports only one method of authentication, **HTTP Basic Auth**. More authentication methods may
     be added in the future.
 
-    To generate credentials, visit <a href="https://www.domeneshop.no/login" target="_blank">this page</a>
+    To generate credentials, visit <a href="https://www.domeneshop.no/admin?view=api" target="_blank">this page</a>
     after logging in to the control panel on our website:
-
-    <a href="https://www.domeneshop.no/login" target="_blank">https://www.domeneshop.no/login</a>
-
-    # Libraries
-
-    Domeneshop maintains multiple API libraries to simplify using the API. Please note that these libraries
-    have the same stability guarantees to the API while the API is in version 0.
-
-    The libraries may be found in our [Github repository](https://github.com/domeneshop/).
-
-    Domeneshop also maintains a plugin for [EFF's Certbot](https://certbot.eff.org/), which automates issuance and
-    renewal of SSL-certificates on your own servers for domains that use Domeneshop's DNS service. This plugin is
-    found in our Github repository [here](https://github.com/domeneshop/certbot-dns-domeneshop).
-
-    <SecurityDefinitions />
+    <a href="https://www.domeneshop.no/admin?view=api" target="_blank">https://www.domeneshop.no/admin?view=api</a>
   title: Domeneshop API Documentation
   version: v0
   x-logo:
@@ -369,6 +343,45 @@ paths:
       tags:
       - forwards
   /domains/{domainId}/forwards/{host}:
+    delete:
+      description: |
+        Delete a forwarding for the specified domain, to a given URL.
+
+        The `host` field must not be changed. Delete the forwarding.
+      parameters:
+      - description: ID of the domain
+        explode: false
+        in: path
+        name: domainId
+        required: true
+        schema:
+          type: integer
+        style: simple
+      - description: Subdomain of the forward, `@` for the root domain
+        example: www
+        explode: false
+        in: path
+        name: host
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPForward'
+          description: Successful operation
+        "400":
+          description: Invalid forward
+        "404":
+          description: Forward or domain not found
+        "412":
+          description: Forward host was modified
+      summary: Update forward by host
+      tags:
+      - forwards
     get:
       parameters:
       - description: ID of the domain
